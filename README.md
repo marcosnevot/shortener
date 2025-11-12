@@ -49,7 +49,7 @@
 - **Métricas**: `App\Services\MetricsContract` → `Metrics` (Redis).
 - **SlugService**: `base62(id)` + `_` + `sig(11)`; `sig = HMAC(id|url)`.
 - **Endpoints**:
-  - Web: `/{slug}` (GET/HEAD), `/panel`
+  - Web: `/r/{slug}` (GET/HEAD), `/`
   - API: creación/consulta/baneo/borrado; estadísticas agregadas.
 
 > Ver más detalles en **OBSERVABILITY.md**.
@@ -251,7 +251,6 @@ Devuelve agregados que cumplan `k ≥ SHORTENER_K_ANON`.
 ├─ docs/
 │  ├─ API/
 │  │  └─ openapi.yaml        # Especificación OpenAPI 3.0
-│  ├─ ARCHITECTURE.md
 │  ├─ ENV.md
 │  ├─ OBSERVABILITY.md
 │  ├─ OPERATIONS.md
