@@ -37,8 +37,8 @@ class RedirectController extends Controller
             abort(404);
         }
 
-        $expected = $slugSvc->sign($link->id, $link->url, config('shortener.hmac_key'));
-        if (!hash_equals($expected, $sig)) {
+            $hmacKey = (string) config('shortener.hmac_key', env('SLUG_HMAC_KEY', ''));
+            $expected = $slugSvc->sign($link->id, $link->url, $hmacKey);        if (!hash_equals($expected, $sig)) {
             $metrics->counterInc('redirect_requests_total', ['result' => 'bad_sig']);
             abort(404);
         }

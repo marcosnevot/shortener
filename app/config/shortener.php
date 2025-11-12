@@ -1,7 +1,8 @@
 <?php
 
 return [
-    'hmac_key' => env('SHORTENER_HMAC_KEY'),
+    'hmac_key' => env('SLUG_HMAC_KEY', ''),
+    'slug_hmac_key' => env('SLUG_HMAC_KEY', ''),
     'k_anon'   => (int) env('SHORTENER_K_ANON', 5),
 
     'allowed_schemes' => array_filter(array_map('trim', explode(',', env('SHORTENER_ALLOWED_SCHEMES', 'https')))),
