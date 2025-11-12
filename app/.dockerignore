@@ -1,6 +1,6 @@
 .git
 node_modules
-vendor # (lo volverá a instalar el stage vendor)
+vendor
 storage/*.log
 storage/framework/cache/*
 storage/framework/sessions/*

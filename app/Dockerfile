@@ -3,14 +3,14 @@ FROM composer:2 AS vendor
 WORKDIR /app
 COPY composer.json composer.lock ./
 RUN composer install --no-dev --prefer-dist --no-progress --no-interaction --optimize-autoloader
-# copiamos el código después para que cachee vendor aunque cambie código
+# Copiamos el código después para que cachee vendor aunque cambie código
 COPY . .
 RUN composer dump-autoload --optimize
 
 # --- Runtime PHP-FPM ---
 FROM php:8.3-fpm-alpine
 
-# Extensiones necesarias (pdo_mysql y opcionalmente bcmath/zip)
+# Extensiones necesarias
 RUN apk add --no-cache icu-libs icu-data-full oniguruma libzip \
   && apk add --no-cache --virtual .build-deps $PHPIZE_DEPS icu-dev oniguruma-dev libzip-dev \
   && docker-php-ext-configure intl \
@@ -19,13 +19,13 @@ RUN apk add --no-cache icu-libs icu-data-full oniguruma libzip \
 
 WORKDIR /var/www/html
 
-# Copia de la app + vendor
+# Copia de la app + vendor desde el stage anterior
 COPY --from=vendor /app /var/www/html
 
 # Permisos mínimos
 RUN chown -R www-data:www-data storage bootstrap/cache
 
-# Opcache razonable
+# Opcache
 RUN { \
   echo "opcache.enable=1"; \
   echo "opcache.enable_cli=0"; \
@@ -37,5 +37,5 @@ RUN { \
 
 USER www-data
 
-# Arranque: enlaza storage, migra, optimiza y levanta PHP-FPM en foreground
+# Arranque: enlaza storage, migra, optimiza y levanta PHP-FPM
 CMD sh -lc 'php artisan storage:link || true && php artisan migrate --force && php artisan optimize && php-fpm -F'
