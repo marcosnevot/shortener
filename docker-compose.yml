@@ -1,0 +1,68 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+    volumes:
+      - ./app:/var/www/html
+    environment:
+      PHP_OPCACHE_VALIDATE_TIMESTAMPS: "1"
+    depends_on:
+      - db
+      - redis
+
+  web:
+    image: nginx:1.25-alpine
+    volumes:
+      - ./app:/var/www/html:ro
+      - ./docker/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    ports:
+      - "8080:80"
+    depends_on:
+      - app
+
+  db:
+    image: mysql:8.0
+    command: >
+      --default-authentication-plugin=mysql_native_password
+      --character-set-server=utf8mb4
+      --collation-server=utf8mb4_unicode_ci
+    environment:
+      MYSQL_DATABASE: shortener
+      MYSQL_USER: shorty
+      MYSQL_PASSWORD: secret
+      MYSQL_ROOT_PASSWORD: root
+    ports:
+      - "3307:3306"
+    volumes:
+      - dbdata:/var/lib/mysql
+
+  redis:
+    image: redis:7
+    ports:
+      - "6379:6379"
+
+  worker:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+    command: php artisan queue:work --queue=analytics --sleep=0 --tries=3
+    volumes:
+      - ./app:/var/www/html
+    depends_on:
+      - app
+      - redis
+      - db
+  
+  prometheus:
+    image: prom/prometheus:latest
+    restart: unless-stopped
+    volumes:
+      - ./app/monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    ports:
+      - "9090:9090"
+    depends_on:
+      - app
+
+volumes:
+  dbdata:

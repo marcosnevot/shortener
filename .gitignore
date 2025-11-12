@@ -1,0 +1,15 @@
+﻿# Laravel (ubicado en app/)
+app/vendor/
+app/node_modules/
+app/storage/
+app/.env
+app/public/storage
+app/bootstrap/cache/*.php
+
+# Logs y caches
+*.log
+storage/*.log
+
+# Docker
+**/.env.local
+**/.env.example.local
