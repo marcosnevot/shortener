@@ -52,7 +52,7 @@
   - Web: `/{slug}` (GET/HEAD), `/panel`
   - API: creación/consulta/baneo/borrado; estadísticas agregadas.
 
-> Ver más detalles en **ARCHITECTURE.md** y **OBSERVABILITY.md**.
+> Ver más detalles en **OBSERVABILITY.md**.
 
 ---
 

@@ -1,22 +1,23 @@
 # Environment Configuration (ENV.md)
 
-This document describes **all environment variables** used by the Shortener project, how to generate safe values, and which files to use in each environment (local, CI/testing, and production). Keep this file in sync with code and deployment docs.
+This document lists **all environment variables** used by Shortener and how to set them **for local development and testing (CI)** in *portfolio mode* (no production deploy).  
+If later you decide to deploy publicly, you can extend this file with a production section.
 
-> ⚠️ **Never commit real secrets** (`APP_KEY`, database passwords, `SHORTENER_HMAC_KEY`, etc.). Store them in a secret manager and provide them only via `.env` (local), CI secrets (GitHub Actions), or host-level files (production).
+> ⚠️ **No real secrets in Git.** Never commit values for `APP_KEY`, database passwords or `SHORTENER_HMAC_KEY`. Keep them locally in `.env` or as CI **Secrets**.
 
 ---
 
 ## 1) Environment files overview
 
-- **Local development:** `.env` at `app/.env` (not committed). Example provided in repo (`.env.example`).
-- **Testing (CI & local tests):** `.env.testing` at `app/.env.testing`. Minimal, fast & isolated defaults (e.g., SQLite in-memory, array/async drivers).
-- **Production (server):** `shortener.env` copied to the deployment host and referenced by `docker-compose.prod.yml` with `--env-file`.
+- **Local development:** `app/.env` (gitignored). See the example below.
+- **Testing (CI & local tests):** `app/.env.testing` (committed) with fast, isolated defaults (SQLite in‑memory, array cache, sync queue).
 
-Directory suggestions:
+Folder layout (relevant parts):
+
 ```
-app/.env                # local only (gitignored)
-app/.env.testing        # committed (safe defaults, no secrets)
-deploy/shortener.env    # on the server (not versioned)
+app/
+├─ .env               # local only (not committed)
+└─ .env.testing       # committed: safe defaults for tests
 ```
 
 ---
@@ -27,63 +28,66 @@ deploy/shortener.env    # on the server (not versioned)
 
 | Name | Type | Example | Notes |
 |---|---|---|---|
-| `APP_NAME` | string | `Shortener` | App display name. |
-| `APP_ENV` | enum | `local` / `testing` / `production` | Affects error reporting & cache. |
-| `APP_KEY` | base64 key | `base64:...` | **Required.** 32 bytes base64; used to encrypt cookies/sessions. |
-| `APP_DEBUG` | bool | `true` (local) / `false` (prod) | Disable in production. |
-| `APP_URL` | URL | `https://short.example.com` | Used by URL generation and some links. |
+| `APP_NAME` | string | `Shortener` | Display name. |
+| `APP_ENV` | enum | `local` / `testing` | Affects error reporting & caches. |
+| `APP_KEY` | base64 key | `base64:...` | **Required.** 32 bytes base64 for encryption. |
+| `APP_DEBUG` | bool | `true` (local) / `false` (tests) | Disable in production (if ever added). |
+| `APP_URL` | URL | `http://localhost:8080` | Used by URL generation. |
 
-Other i18n and maintenance knobs:
+Other knobs:
+
 | Name | Type | Default | Notes |
 |---|---|---|---|
 | `APP_LOCALE` | string | `en` | Default locale. |
-| `APP_FALLBACK_LOCALE` | string | `en` | Fallback locale. |
+| `APP_FALLBACK_LOCALE` | string | `en` | Fallback. |
 | `APP_FAKER_LOCALE` | string | `en_US` | Factories & seeding. |
-| `APP_MAINTENANCE_DRIVER` | enum | `file` | Leave `file` unless you have shared storage. |
+| `APP_MAINTENANCE_DRIVER` | enum | `file` | Keep `file`. |
 
-Security/hardening:
+Logging / security:
+
 | Name | Type | Example | Notes |
 |---|---|---|---|
-| `BCRYPT_ROUNDS` | int | `12` | Hash cost for passwords (admin users if added). |
+| `BCRYPT_ROUNDS` | int | `12` | Hash cost (if users are added in the future). |
 | `LOG_CHANNEL` | enum | `stack` | See Laravel logging. |
-| `LOG_LEVEL` | enum | `debug` (local) / `info` (prod) | Reduce noise in prod. |
+| `LOG_LEVEL` | enum | `debug` (local) | Reduce noise in CI if needed. |
 
 ### Database
 
 | Name | Type | Example | Notes |
 |---|---|---|---|
-| `DB_CONNECTION` | enum | `mysql` / `sqlite` | MySQL in prod; SQLite in CI tests. |
-| `DB_HOST` | hostname | `db` | Service name in Docker Compose. |
+| `DB_CONNECTION` | enum | `mysql` / `sqlite` | MySQL in local Docker; **SQLite in tests**. |
+| `DB_HOST` | hostname | `db` | Service name in Docker Compose (local). |
 | `DB_PORT` | int | `3306` | MySQL port. |
 | `DB_DATABASE` | string | `shortener` | Database name. |
-| `DB_USERNAME` | string | `shorty` | User with least privileges. |
-| `DB_PASSWORD` | string | `secret` | Use a strong password in prod. |
+| `DB_USERNAME` | string | `shorty` | Least-privileged user. |
+| `DB_PASSWORD` | string | `secret` | Strong password locally is fine. |
 
 ### Cache, Session & Queue
 
 | Name | Type | Example | Notes |
 |---|---|---|---|
-| `CACHE_STORE` | enum | `redis` (prod), `array` (testing) | Redis recommended in prod. |
-| `SESSION_DRIVER` | enum | `database` / `redis` / `array` | `array` for tests, stateful driver in prod. |
-| `SESSION_LIFETIME` | minutes | `120` | Session lifetime. |
-| `SESSION_ENCRYPT` | bool | `false` | Enable if required by policy. |
+| `CACHE_STORE` | enum | `redis` (local), `array` (testing) | Use `array` for speed in tests. |
+| `SESSION_DRIVER` | enum | `database` / `redis` / `array` | `array` in tests, stateful in local. |
+| `SESSION_LIFETIME` | minutes | `120` | Session TTL. |
+| `SESSION_ENCRYPT` | bool | `false` | Enable if policy requires. |
 | `SESSION_PATH` | path | `/` |  |
 | `SESSION_DOMAIN` | domain/null | `null` |  |
-| `QUEUE_CONNECTION` | enum | `redis` (prod), `sync` (testing) | Analytics uses a `analytics` queue name. |
+| `QUEUE_CONNECTION` | enum | `redis` (local), `sync` (testing) | Analytics worker not needed in tests. |
 
-Redis:
+**Redis** (used in local dev for cache/queues/metrics):
+
 | Name | Type | Example | Notes |
 |---|---|---|---|
-| `REDIS_CLIENT` | enum | `phpredis` | Project uses phpredis. |
-| `REDIS_HOST` | hostname | `redis` | Service name in Docker Compose. |
+| `REDIS_CLIENT` | enum | `phpredis` | This project uses phpredis. |
+| `REDIS_HOST` | hostname | `redis` | Service name in Docker Compose (local). |
 | `REDIS_PORT` | int | `6379` |  |
-| `REDIS_PASSWORD` | string/null | `null` | Configure if Redis is protected. |
+| `REDIS_PASSWORD` | string/null | `null` | Set if your local Redis requires auth. |
 
 ### Mail
 
 | Name | Type | Example | Notes |
 |---|---|---|---|
-| `MAIL_MAILER` | enum | `log` | `log` in local; SMTP for prod if needed. |
+| `MAIL_MAILER` | enum | `log` | `log` locally; no SMTP needed. |
 | `MAIL_HOST` | hostname | `127.0.0.1` |  |
 | `MAIL_PORT` | int | `2525` |  |
 | `MAIL_USERNAME` | string/null | `null` |  |
@@ -95,55 +99,54 @@ Redis:
 
 | Name | Type | Example | Notes |
 |---|---|---|---|
-| `SHORTENER_HMAC_KEY` | base64-32 | `CBnsclf0rjpe07z9...` | **Critical.** 32 random bytes, base64. Used to sign slugs. Rotating **invalidates existing slugs**. |
-| `SHORTENER_K_ANON` | int | `7` | K-anonymity threshold for public stats. |
+| `SHORTENER_HMAC_KEY` | base64-32 | `base64:...` | **Critical.** 32 random bytes, base64. Used to sign slugs. Rotating invalidates old slugs (by design). |
+| `SHORTENER_K_ANON` | int | `7` | k‑anonymity threshold for public stats. |
 | `SHORTENER_MAX_CREATE_PER_MINUTE` | int | `30` | Rate-limit for link creation. |
 | `SHORTENER_MAX_RESOLVE_PER_MINUTE` | int | `120` | Rate-limit for resolving/redirects. |
-| `SHORTENER_ALLOWED_SCHEMES` | CSV | `https` | Allowed URL schemes for destinations. |
-| `SHORTENER_DOMAIN_WHITELIST` | CSV/empty | *(empty)* or `example.com,another.net` | If set, only allows destinations within these registrable domains. |
+| `SHORTENER_ALLOWED_SCHEMES` | CSV | `https` | Allowed destination URL schemes. |
+| `SHORTENER_DOMAIN_WHITELIST` | CSV/empty | *(empty)* or `example.com,another.net` | If set, restricts to those registrable domains. |
 
-### Geo / Analytics
+### Geo / Analytics (optional)
 
 | Name | Type | Example | Notes |
 |---|---|---|---|
-| `GEOIP_DB` | path | `/var/www/html/storage/app/geoip/GeoLite2-Country.mmdb` | Optional; for country-level analytics. Ensure file is present inside the container or mount it. |
+| `GEOIP_DB` | path | `/var/www/html/storage/app/geoip/GeoLite2-Country.mmdb` | Optional; for country‑level analytics. Place file inside the container or mount it. |
 
 ---
 
 ## 3) Generating **secure** values
 
 ### `APP_KEY` (base64, 32 bytes)
-- **Laravel** (inside container or local PHP):  
+- **Laravel (inside the app container or local PHP):**
   ```bash
   php artisan key:generate --show
   ```
-- **OpenSSL (Linux/macOS):**  
+- **OpenSSL (Linux/macOS):**
   ```bash
   openssl rand -base64 32
   ```
-- **PowerShell (Windows):**  
+- **PowerShell (Windows):**
   ```powershell
-  [Convert]::ToBase64String((New-Object byte[] 32 | %{[void](New-Object System.Security.Cryptography.RNGCryptoServiceProvider).GetBytes($_);$_}))
+  [Convert]::ToBase64String((1..32 | % { Get-Random -Maximum 256 } | ForEach-Object {[byte]$_}))
   ```
 
 ### `SHORTENER_HMAC_KEY` (base64, 32 bytes)
-- **Linux/macOS:**  
+- **Linux/macOS:**
   ```bash
   openssl rand -base64 32
   ```
-- **PHP one-liner:**  
+- **PHP one‑liner:**
   ```bash
   php -r "echo base64_encode(random_bytes(32)), PHP_EOL;"
   ```
 
-> Keep both keys secret. Rotating `SHORTENER_HMAC_KEY` **breaks old slugs** by design. Plan rotation windows accordingly.
+> Keep both keys secret. Rotating `SHORTENER_HMAC_KEY` **breaks old slugs**. Do it only between demos if necessary.
 
 ---
 
 ## 4) Recommended files by environment
 
 ### A) Local development — `app/.env`
-Example (adjust DB/Redis if your compose names differ):
 ```dotenv
 APP_NAME=Shortener
 APP_ENV=local
@@ -202,27 +205,26 @@ GEOIP_DB=/var/www/html/storage/app/geoip/GeoLite2-Country.mmdb
 ```
 
 ### B) Testing (CI & local) — `app/.env.testing`
-Lean settings to make tests fast and deterministic:
+*(fast & deterministic)*
 ```dotenv
 APP_NAME=Shortener
 APP_ENV=testing
 APP_KEY=base64:testingtestingtestingtestingtestingtest=
-APP_DEBUG=true
+APP_DEBUG=false
 APP_URL=http://localhost
 
-# Avoid external services in tests
+# In-memory DB for speed
 DB_CONNECTION=sqlite
 DB_DATABASE=:memory:
 
+# No external services in tests
 CACHE_STORE=array
 SESSION_DRIVER=array
 QUEUE_CONNECTION=sync
+FILESYSTEM_DISK=local
+VIEW_COMPILED_PATH=/tmp
 
-REDIS_CLIENT=phpredis
-REDIS_HOST=localhost
-REDIS_PORT=6379
-REDIS_PASSWORD=null
-
+# HMAC for tests (doesn't need to be secret)
 SHORTENER_HMAC_KEY=base64:testingtestingtestingtestingtestingtest=
 SHORTENER_K_ANON=7
 SHORTENER_MAX_CREATE_PER_MINUTE=1000
@@ -234,99 +236,36 @@ MAIL_MAILER=array
 MAIL_FROM_ADDRESS="test@example.com"
 MAIL_FROM_NAME="${APP_NAME}"
 
+# Optional: path used by tests if GeoIP is needed
 GEOIP_DB=/tmp/GeoLite2-Country.mmdb
 ```
 
-> The test suite itself ensures view/cache directories exist, so no extra FS steps are required in CI. If you run tests manually, ensure `storage/framework/{cache,views,sessions}` exist (Laravel will create them when needed).
-
-### C) Production — `deploy/shortener.env`
-This file **lives on the server** and is referenced by your `docker-compose.prod.yml` with `--env-file`.
-
-```dotenv
-APP_NAME=Shortener
-APP_ENV=production
-APP_KEY=base64:REPLACE_ME
-APP_DEBUG=false
-APP_URL=https://short.example.com
-
-APP_LOCALE=en
-APP_FALLBACK_LOCALE=en
-APP_MAINTENANCE_DRIVER=file
-
-BCRYPT_ROUNDS=12
-LOG_CHANNEL=stack
-LOG_LEVEL=info
-
-DB_CONNECTION=mysql
-DB_HOST=db
-DB_PORT=3306
-DB_DATABASE=shortener
-DB_USERNAME=shorty
-DB_PASSWORD=CHANGE_ME
-
-SESSION_DRIVER=database
-SESSION_LIFETIME=120
-SESSION_ENCRYPT=false
-SESSION_PATH=/
-SESSION_DOMAIN=null
-
-CACHE_STORE=redis
-QUEUE_CONNECTION=redis
-
-REDIS_CLIENT=phpredis
-REDIS_HOST=redis
-REDIS_PASSWORD=null
-REDIS_PORT=6379
-
-SHORTENER_HMAC_KEY=base64:REPLACE_ME
-SHORTENER_K_ANON=7
-SHORTENER_MAX_CREATE_PER_MINUTE=30
-SHORTENER_MAX_RESOLVE_PER_MINUTE=120
-SHORTENER_ALLOWED_SCHEMES=https
-SHORTENER_DOMAIN_WHITELIST=
-
-MAIL_MAILER=log
-MAIL_FROM_ADDRESS="hello@example.com"
-MAIL_FROM_NAME="${APP_NAME}"
-
-VITE_APP_NAME="${APP_NAME}"
-
-# Optional — mount or bake the file into the image if you need country analytics
-GEOIP_DB=/var/www/html/storage/app/geoip/GeoLite2-Country.mmdb
-```
+> The test suite and CI workflow ensure cache/view paths exist. If you run tests manually outside Docker, prepare them with:
+> ```bash
+> php artisan optimize:clear
+> mkdir -p storage/framework/{cache,views,sessions}
+> ```
 
 ---
 
-## 5) Secrets in CI/CD
+## 5) CI secrets (optional)
 
-- **GitHub Actions (CI):** create repository **Secrets** (not variables) for anything sensitive. At minimum:
-  - `DOCKERHUB_USERNAME`
-  - `DOCKERHUB_TOKEN` (or PAT with `write:packages` on Docker Hub)
-- Use `${{ secrets.NAME }}` in workflow YAML (already set in `ci.yml`).
+If your CI workflow is configured to **push a Docker image** (optional), set repository **Secrets** (not Variables) in GitHub:
+- `DOCKERHUB_USERNAME`
+- `DOCKERHUB_TOKEN`
+
+If you don’t set them, the CI will still run tests; the push step can be skipped/fail without affecting your local use.
 
 ---
 
 ## 6) Troubleshooting
 
-- **`Please provide a valid cache path` in CI/tests:** ensure tests create/point `storage/framework/views` and `storage/framework/cache`. The current test suite already handles it; if running tests manually, clear/prepare with:
-  ```bash
-  php artisan optimize:clear
-  mkdir -p storage/framework/{cache,views,sessions}
-  ```
-- **HMAC signature mismatch:** `SHORTENER_HMAC_KEY` differs from the one that created existing slugs. Rotations intentionally invalidate old slugs.
-- **Redis/Queue unavailable:** fall back to `QUEUE_CONNECTION=sync` temporarily (not recommended for prod) or restore Redis.
+- **`Please provide a valid cache path` in tests:** ensure `VIEW_COMPILED_PATH` is set (e.g. `/tmp`) and the `storage/framework/...` dirs exist. See tip above.
+- **HMAC signature mismatch:** your `SHORTENER_HMAC_KEY` changed; previously generated slugs won’t validate.
+- **Redis not running locally:** switch to `CACHE_STORE=array` and `QUEUE_CONNECTION=sync` temporarily for demos (less realistic, but works).
 
 ---
 
 ## 7) Change log (ENV-impacting)
 
-- v1: Initial set covering app/db/cache/redis/mail + shortener-specific knobs and GeoIP path.
-
----
-
-## 8) Appendix — Policy hints
-
-- Use `https` only in `SHORTENER_ALLOWED_SCHEMES` for production.
-- If you must allow `http`, do it per-environment and behind internal networks only.
-- Define `SHORTENER_DOMAIN_WHITELIST` for tenant- or org-scoped deployments (comma-separated, no spaces).
-
+- **v1 (portfolio mode):** Initial local + testing coverage; production section removed while `deploy/` is absent.

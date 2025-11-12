@@ -6,9 +6,9 @@ The format is based on **Keep a Changelog** and this project adheres to **Semant
 ## [Unreleased]
 
 ### Added
-- (Docs) DEPLOYMENT.md, ENV.md, OBSERVABILITY.md, CONTRIBUTING.md.
+- (Docs) ENV.md, OBSERVABILITY.md, OPERATIONS.md, CONTRIBUTING.md.
 - (CI) GitHub Actions workflow: ejecuta PHPUnit y build & push de la imagen Docker usando Buildx + caché GHA.
-- (Release) Plantilla `docker-compose.prod.yml` y `shortener.env` para despliegue en servidor.
+
 
 ### Changed
 - (Security) Endurecimiento de cabeceras HTTP en middleware `SecurityHeaders`.

@@ -158,7 +158,7 @@ Criterios para abrir PR:
 **Checklist PR**:
 - [ ] Cambios enfocados (un tema por PR).
 - [ ] Sin secretos ni credenciales.
-- [ ] `ENV.md`/`OBSERVABILITY.md`/`DEPLOYMENT.md` actualizados si aplica.
+- [ ] `ENV.md`/`OBSERVABILITY.md` actualizados si aplica.
 - [ ] Suite PHPUnit en verde.
 - [ ] Revisión de *edge cases* (errores de firma, expiración, límites, cola caída).
 
@@ -196,7 +196,6 @@ Errores típicos y remedios están documentados en `DEPLOYMENT.md`.
 Si tu PR afecta a:
 - Variables de entorno → actualiza **ENV.md** (+ ejemplos).
 - Observabilidad → actualiza **OBSERVABILITY.md** (métricas, paneles).
-- Despliegue → actualiza **DEPLOYMENT.md** (pasos, secrets, compose).
 - Overview/uso → actualiza **README.md**.
 
 Añade entradas a **CHANGELOG.md** bajo `[Unreleased]` siguiendo *Keep a Changelog*.

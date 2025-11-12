@@ -1,8 +1,5 @@
 ﻿# Operations (Runbooks)
 
-## Despliegue
-- Ver docs/DEPLOYMENT.md.
-
 ## Rotación de SHORTENER_HMAC_KEY
 **Actual**: single key. Opciones:
 1) **Regenerar slugs** (corte controlado): pausar creación, cambiar clave, regenerar slugs y comunicar.
