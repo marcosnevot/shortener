@@ -8,8 +8,9 @@ RUN composer install --no-dev --prefer-dist --no-progress --no-interaction --opt
 
 # 2) Copia el código y AHORA sí ejecuta scripts
 COPY . .
-RUN composer dump-autoload --optimize && php artisan package:discover --ansi
-
+RUN mkdir -p storage/framework/cache storage/framework/sessions storage/framework/views storage/logs bootstrap/cache \
+    && composer dump-autoload --optimize \
+    && php artisan package:discover --ansi
 # --- Runtime PHP-FPM ---
 FROM php:8.3-fpm-alpine
 
@@ -25,8 +26,9 @@ WORKDIR /var/www/html
 COPY --from=vendor /app /var/www/html
 
 # Permisos mínimos
-RUN chown -R www-data:www-data storage bootstrap/cache
-
+RUN mkdir -p storage/framework/cache storage/framework/sessions storage/framework/views storage/logs bootstrap/cache \
+    && chown -R www-data:www-data storage bootstrap/cache
+    
 # Opcache
 RUN { \
   echo "opcache.enable=1"; \
