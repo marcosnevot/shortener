@@ -1,3 +1,5 @@
+[English](README.md) | **Español**
+
 # Shortener — URL shortener con firmas HMAC y analítica *privacy‑first*
 
 > Laravel 12 + MySQL 8 + Redis 7. Slugs firmados (HMAC), panel mínimo, métricas Prometheus, *rate limits* y estadísticas con *k‑anonymity*.
