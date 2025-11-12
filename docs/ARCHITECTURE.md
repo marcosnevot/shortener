@@ -17,7 +17,7 @@
   - clicks_agg: agregados por ventana (se actualiza en background).
 - **Cache/Queue/Metrics**: Redis 7
   - Cache de Link por id.
-  - Cola nalytics para IngestClickEvent.
+  - Cola analytics para IngestClickEvent.
   - Métricas en claves Redis (counter/histogram).
 - **Slug & firma**
   - id  **base62**  idB62.
@@ -30,11 +30,13 @@
 - **Seguridad**
   - SecurityHeaders middleware: CSP estricta, HSTS, Referrer-Policy, no-store en redirecciones.
   - Lista blanca de dominios y esquemas (SHORTENER_DOMAIN_WHITELIST, SHORTENER_ALLOWED_SCHEMES).
-  - Token API por tabla pi_tokens (	oken_hash, scopes).
+  - Token API por tabla api_tokens (	oken_hash, scopes).
 - **Observabilidad**
   - MetricsContract / Metrics (Redis):
-    - edirect_requests_total{result}
-    - edirect_duration_seconds (histograma)
+    - 
+edirect_requests_total{result}
+    - 
+edirect_duration_seconds (histograma)
   - Endpoint /metrics (Prometheus-friendly) y /health.
 - **CI/CD**
   - Workflow ci.yml: test PHPUnit, buildx, push a Docker Hub.
@@ -42,10 +44,10 @@
   - docker-compose.prod.yml levanta app + db + redis y se alimenta de deploy/shortener.env.
 
 ## Estructura relevante
-- pp/Http/Controllers/Web/RedirectController.php
-- pp/Jobs/IngestClickEvent.php (ingesta  clicks_agg)
-- pp/Services/SlugService.php, pp/Services/MetricsContract.php, pp/Services/Metrics.php
+- app/Http/Controllers/Web/RedirectController.php
+- app/Jobs/IngestClickEvent.php (ingesta  clicks_agg)
+- app/Services/SlugService.php, app/Services/MetricsContract.php, app/Services/Metrics.php
 - 	ests/Feature/*, 	ests/Unit/*
 - .github/workflows/ci.yml
 - deploy/docker-compose.prod.yml, deploy/shortener.env (plantilla)
-- pp/Dockerfile (imagen final)
+- app/Dockerfile (imagen final)

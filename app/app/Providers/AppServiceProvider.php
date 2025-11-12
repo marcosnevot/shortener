@@ -19,7 +19,7 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
-        // Crear enlaces (ya estaba)
+        // Crear enlaces
         RateLimiter::for('create-links', function (Request $request) {
             $id = app()->bound('api.token') ? app('api.token')->id : $request->ip();
             $perMin = (int) config('shortener.rate_limits.create_per_min', 30);

@@ -6,4 +6,4 @@ scrape_configs:
   - job_name: 'shortener'
     metrics_path: /metrics
     static_configs:
-      - targets: ['host.docker.internal:8080']  # puerto que usas en el navegador
+      - targets: ['host.docker.internal:8080']  # puerto que uso en el navegador

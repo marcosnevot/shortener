@@ -9,7 +9,7 @@ final class UrlNormalizer
         $u = trim($raw);
         if ($u === '') return $u;
 
-        // añade esquema si falta
+    
         if (!preg_match('~^https?://~i', $u)) {
             $u = 'https://' . $u;
         }
