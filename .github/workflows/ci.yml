@@ -72,6 +72,12 @@ jobs:
         working-directory: app
         run: php artisan migrate --env=testing --force
 
+      - name: Prepare storage dirs
+        working-directory: app
+        run: |
+          mkdir -p storage/framework/{cache,sessions,views} bootstrap/cache
+
+
       - name: Run tests
         working-directory: app
         run: vendor/bin/phpunit -d memory_limit=512M
