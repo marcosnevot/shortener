@@ -149,7 +149,7 @@ docker compose exec app php artisan storage:link
 ```
 
 - App: <http://localhost:8080>  
-- Panel: `/panel`  
+- Panel: `/`  
 - Métricas: `/metrics` (texto Prometheus)  
 - Salud: `/health`
 
