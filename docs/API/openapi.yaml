@@ -1,5 +1,4 @@
-@"
-openapi: 3.0.3
+﻿openapi: 3.0.3
 info:
   title: Shortener API
   version: 1.0.0
@@ -61,7 +60,11 @@ paths:
           content:
             application/json:
               schema: { $ref: "#/components/schemas/CreateLinkResponse" }
-        "400": { description: Invalid payload, content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } } }
+        "400":
+          description: Invalid payload
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
         "429": { description: Rate limited }
   /api/links/{id}:
     get:
@@ -72,7 +75,11 @@ paths:
           required: true
           schema: { type: integer }
       responses:
-        "200": { description: OK, content: { application/json: { schema: { $ref: "#/components/schemas/Link" } } } }
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Link" }
         "404": { description: Not found }
     delete:
       summary: Eliminar enlace
@@ -123,4 +130,3 @@ paths:
       responses:
         "302": { description: Redirect }
         "404": { description: Not found }
-"@ | Set-Content -Encoding UTF8 docs\API\openapi.yaml
