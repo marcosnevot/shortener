@@ -99,7 +99,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: marcosnevot/shortener
+          images: docker.io/${{ secrets.DOCKERHUB_USERNAME }}/shortener
           tags: |
             type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
             type=ref,event=tag
@@ -107,8 +107,10 @@ jobs:
       - name: Build & push
         uses: docker/build-push-action@v6
         with:
-          context: .
-          file: Dockerfile
+          context: ./app
+          file: ./app/Dockerfile
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
