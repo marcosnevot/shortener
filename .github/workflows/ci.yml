@@ -1,11 +1,8 @@
-﻿name: CI
-
+﻿name: ci
 on:
   push:
-    branches: [ "main" ]
-    tags: [ "v*" ]
+    branches: [ main ]
   pull_request:
-    branches: [ "main" ]
 
 jobs:
   tests:
@@ -13,109 +10,82 @@ jobs:
     services:
       mysql:
         image: mysql:8
-        env:
-          MYSQL_ROOT_PASSWORD: root
-          MYSQL_DATABASE: shortener_test
         ports: ['3306:3306']
+        env:
+          MYSQL_DATABASE: shortener
+          MYSQL_USER: shorty
+          MYSQL_PASSWORD: secret
+          MYSQL_ROOT_PASSWORD: secret
         options: >-
-          --health-cmd="mysqladmin ping -h 127.0.0.1 -uroot -proot"
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -uroot -psecret"
           --health-interval=10s --health-timeout=5s --health-retries=10
       redis:
         image: redis:7
         ports: ['6379:6379']
-
     steps:
       - uses: actions/checkout@v4
 
-      - uses: shivammathur/setup-php@v2
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
         with:
           php-version: '8.3'
-          extensions: mbstring, intl, pdo_mysql, redis
           coverage: none
+          extensions: intl, pdo_mysql, redis
 
-      - name: Cache Composer
-        uses: actions/cache@v4
-        with:
-          path: ~/.composer/cache/files
-          key: ${{ runner.os }}-composer-${{ hashFiles('app/composer.lock') }}
-          restore-keys: ${{ runner.os }}-composer-
-
-      - name: Install deps
+      - name: Composer install
         working-directory: app
-        run: composer install --no-progress --prefer-dist --optimize-autoloader
+        run: composer install -q --no-interaction --no-progress
 
-      - name: Create .env.testing
+      - name: Bootstrap test env (cache/compiled)
         working-directory: app
         run: |
-          cp .env.example .env.testing || true
-          printf "%s\n" \
-            "APP_ENV=testing" \
-            "APP_DEBUG=true" \
-            "DB_CONNECTION=mysql" \
-            "DB_HOST=127.0.0.1" \
-            "DB_PORT=3306" \
-            "DB_DATABASE=shortener_test" \
-            "DB_USERNAME=root" \
-            "DB_PASSWORD=root" \
-            "CACHE_DRIVER=array" \
-            "SESSION_DRIVER=array" \
-            "QUEUE_CONNECTION=sync" \
-            "REDIS_HOST=127.0.0.1" \
-            "RATE_LIMIT_RESOLVE=100,1" \
-            >> .env.testing
-
-      - name: App key
-        working-directory: app
-        run: php artisan key:generate --env=testing --force
-
-      - name: Migrate
-        working-directory: app
-        run: php artisan migrate --env=testing --force
-
-      - name: Prepare storage dirs
-        working-directory: app
-        run: |
-          mkdir -p storage/framework/{cache,sessions,views} bootstrap/cache
-
+          mkdir -p storage/framework/{cache,views,sessions} bootstrap/cache
+          cp .env.example .env || true
+          php -r "file_put_contents('.env', preg_replace('/^APP_ENV=.*/m','APP_ENV=testing', file_get_contents('.env')));"
+          php -r "file_put_contents('.env', preg_replace('/^APP_DEBUG=.*/m','APP_DEBUG=false', file_get_contents('.env')));"
+          php artisan key:generate
+          php artisan migrate --force
 
       - name: Run tests
         working-directory: app
         run: vendor/bin/phpunit -d memory_limit=512M
 
-  build-and-push:
-    needs: tests
-    if: github.ref_type == 'tag' || github.ref == 'refs/heads/main'
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
+      - name: Set Docker secrets env (optional)
+        run: |
+          echo "DOCKERHUB_USERNAME=${{ secrets.DOCKERHUB_USERNAME }}" >> $GITHUB_ENV
+          echo "DOCKERHUB_TOKEN=${{ secrets.DOCKERHUB_TOKEN }}" >> $GITHUB_ENV
+
+      - name: Set up QEMU
+        if: ${{ env.DOCKERHUB_USERNAME != '' && env.DOCKERHUB_TOKEN != '' }}
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Buildx
+        if: ${{ env.DOCKERHUB_USERNAME != '' && env.DOCKERHUB_TOKEN != '' }}
+        uses: docker/setup-buildx-action@v3
 
       - name: Login to Docker Hub
+        if: ${{ env.DOCKERHUB_USERNAME != '' && env.DOCKERHUB_TOKEN != '' }}
         uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Docker meta
-        id: meta
-        uses: docker/metadata-action@v5
-        with:
-          images: docker.io/${{ secrets.DOCKERHUB_USERNAME }}/shortener
-          tags: |
-            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
-            type=ref,event=tag
-      
-      - name: Set up Buildx
-        uses: docker/setup-buildx-action@v3
-        with:
-          driver: docker-container
-
-      - name: Build & push
+      - name: Build image (no push)
+        if: ${{ env.DOCKERHUB_USERNAME == '' || env.DOCKERHUB_TOKEN == '' }}
         uses: docker/build-push-action@v6
         with:
-          context: ./app
-          file: ./app/Dockerfile
+          context: app
+          file: app/Dockerfile
+          push: false
+          tags: shortener:ci
+
+      - name: Build & push (optional)
+        if: ${{ env.DOCKERHUB_USERNAME != '' && env.DOCKERHUB_TOKEN != '' }}
+        uses: docker/build-push-action@v6
+        with:
+          context: app
+          file: app/Dockerfile
           push: true
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
+          tags: docker.io/${{ secrets.DOCKERHUB_USERNAME }}/shortener:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
