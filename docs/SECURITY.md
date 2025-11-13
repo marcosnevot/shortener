@@ -1,34 +1,33 @@
 # Security
 
-## Superficie y principios
-- **Negar por defecto**: redirecciones solo válidas si firma/estado/límites/expiración OK.
-- **Anti-enumeración**: mismos códigos 404 para casos inválidos (slug, firma, ban, expirado).
-- **Whitelisting**: `SHORTENER_ALLOWED_SCHEMES` y `SHORTENER_DOMAIN_WHITELIST`.
-- **Tokens API**: hash almacenado (`token_hash`), `scopes` por acción.
+## Surface and principles
+- **Deny by default**: redirects are only valid if signature/state/limits/expiration are OK.
+- **Anti-enumeration**: same 404 codes for invalid cases (slug, signature, ban, expired).
+- **Whitelisting**: `SHORTENER_ALLOWED_SCHEMES` and `SHORTENER_DOMAIN_WHITELIST`.
+- **API tokens**: stored hash (`token_hash`), `scopes` per action.
 
-## Encabezados
+## Headers
 - `SecurityHeaders` middleware:
-  - `Content-Security-Policy` (CSP estricta)
+  - `Content-Security-Policy` (strict CSP)
   - `Strict-Transport-Security` (HSTS)
   - `Referrer-Policy: strict-origin-when-cross-origin`
   - `X-Content-Type-Options: nosniff`
-  - Redirecciones con `Cache-Control: no-store`
+  - Redirects with `Cache-Control: no-store`
 
-## Claves & secretos
-- `SHORTENER_HMAC_KEY` (32B). Rotación planificada: requiere doble validación temporal o regeneración de slugs.
-- Secrets en **GitHub Actions** y **Docker** (no en repo).
+## Keys & secrets
+- `SHORTENER_HMAC_KEY` (32B). Planned rotation: requires temporary dual validation or regeneration of slugs.
+- Secrets in **GitHub Actions** and **Docker** (not in repo).
 
-## Límites
-- Rate-limits por minuto en creación/resolución (env).
-- Máximo por link: campo `max_clicks` con incremento **atómico**.
+## Limits
+- Rate limits per minute for creation/resolution (env).
+- Maximum per link: `max_clicks` field with **atomic** increment.
 
-## Datos & Privacidad
-- Sin PII en analytics. Se envía a cola `analytics` un evento mínimo (fecha, UA, referrer, ip).
-- Aggregación en `clicks_agg` con **k-anonymity** (parametrizable).
+## Data & Privacy
+- No PII in analytics. A minimal event (date, UA, referrer, ip) is sent to the `analytics` queue.
+- Aggregation in `clicks_agg` with **k-anonymity** (configurable).
 
 ## Testing
-- Tests funcionales cubren:
-  - HEAD no consume click.
-  - Límite `max_clicks` atómico.
-  - Encabezados de seguridad presentes en panel.
-
+- Functional tests cover:
+  - HEAD does not consume a click.
+  - Atomic `max_clicks` limit.
+  - Security headers present in panel.
