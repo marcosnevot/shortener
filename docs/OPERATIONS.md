@@ -1,26 +1,26 @@
-﻿# Operations (Runbooks)
+# Operations (Runbooks)
 
-## Rotación de SHORTENER_HMAC_KEY
-**Actual**: single key. Opciones:
-1) **Regenerar slugs** (corte controlado): pausar creación, cambiar clave, regenerar slugs y comunicar.
-2) **Doble validación** (recomendado futuro): soportar OLD_KEY,NEW_KEY en config y aceptar ambas firmas durante ventana de rotación. *(A implementar si se requiere)*
+## Rotation of SHORTENER_HMAC_KEY
+**Current**: single key. Options:
+1) **Regenerate slugs** (controlled cutover): pause creation, change the key, regenerate slugs and communicate.
+2) **Dual validation** (recommended for the future): support OLD_KEY,NEW_KEY in config and accept both signatures during the rotation window. *(To be implemented if required)*
 
-## Baneo de enlaces abusivos
-1) Marca is_banned = 1 en DB o vía endpoint /api/links/{id}/ban.
-2) Caché se actualiza en la próxima resolución; invalidación manual opcional: cache:clear.
+## Banning abusive links
+1) Set is_banned = 1 in DB or via endpoint /api/links/{id}/ban.
+2) Cache is updated on the next resolution; optional manual invalidation: cache:clear.
 
-## Rendimiento alto en resolución
-- Redis en la misma red/host de la app para minimizar latencia.
-- Cache::remember(link:<id>) TTL 10 min; ajusta según tráfico.
+## High performance in resolution
+- Redis on the same network/host as the app to minimize latency.
+- Cache::remember(link:<id>) TTL 10 min; adjust according to traffic.
 
 ## DR / Backups
 - MySQL: snapshots + dumps (mysqldump).
-- Redis: snapshot (RDB) si procede; métricas son reconstruibles, pero clicks_agg conviene conservar.
+- Redis: snapshot (RDB) if appropriate; metrics can be rebuilt, but clicks_agg is worth preserving.
 
 ## GeoIP
-- Actualiza GEOIP_DB cuando haya nueva base. Monta volumen sobre storage/app/geoip.
+- Update GEOIP_DB when a new database is available. Mount a volume over storage/app/geoip.
 
-## Mantenimiento
+## Maintenance
 - php artisan optimize:clear
 - php artisan migrate --force
-- Rotación de logs: delegada al runtime/container.
+- Log rotation: delegated to the runtime/container.
