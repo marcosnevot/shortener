@@ -1,143 +1,143 @@
-# Guía de Contribución (CONTRIBUTING.md)
+# Contribution Guide (CONTRIBUTING.md)
 
-¡Gracias por tu interés en contribuir! Este documento describe el flujo de trabajo, estándares y herramientas del proyecto **Shortener** (acortador de URLs con firma HMAC y analítica *privacy‑first*).
+Thank you for your interest in contributing! This document describes the workflow, standards and tools of the **Shortener** project (URL shortener with HMAC-signed URLs and *privacy‑first* analytics).
 
-> **Resumen del stack**: Laravel 12 (PHP 8.3), MySQL 8, Redis 7, Blade, colas (database/redis), Docker multi‑stage, GitHub Actions, Prometheus (/metrics), endpoint /health, límites y cabeceras de seguridad.
+> **Stack summary**: Laravel 12 (PHP 8.3), MySQL 8, Redis 7, Blade, queues (database/redis), multi‑stage Docker, GitHub Actions, Prometheus (/metrics), /health endpoint, security limits and headers.
 
 ---
 
-## Tabla de contenido
-- [Código de conducta](#código-de-conducta)
-- [Requisitos](#requisitos)
-- [Preparación del entorno local](#preparación-del-entorno-local)
-- [Estructura del repositorio](#estructura-del-repositorio)
-- [Flujo de trabajo Git](#flujo-de-trabajo-git)
-- [Estilo y calidad](#estilo-y-calidad)
+## Table of Contents
+- [Code of Conduct](#code-of-conduct)
+- [Requirements](#requirements)
+- [Local Environment Setup](#local-environment-setup)
+- [Repository Structure](#repository-structure)
+- [Git Workflow](#git-workflow)
+- [Style and Quality](#style-and-quality)
 - [Tests](#tests)
-- [Commits y mensajes](#commits-y-mensajes)
+- [Commits and Messages](#commits-and-messages)
 - [Pull Requests](#pull-requests)
 - [CI/CD](#cicd)
-- [Documentación](#documentación)
-- [Seguridad](#seguridad)
-- [Reporte de vulnerabilidades](#reporte-de-vulnerabilidades)
-- [Licencia](#licencia)
+- [Documentation](#documentation)
+- [Security](#security)
+- [Vulnerability Reporting](#vulnerability-reporting)
+- [License](#license)
 
 ---
 
-## Código de conducta
-Adoptamos el [Contributor Covenant](https://www.contributor-covenant.org/). Sé respetuoso, profesional y empático. Incidencias graves pueden ser comunicadas por *GitHub Security Advisories* o a los Maintainers del proyecto.
+## Code of Conduct
+We adopt the [Contributor Covenant](https://www.contributor-covenant.org/). Be respectful, professional and empathetic. Serious incidents can be reported through *GitHub Security Advisories* or directly to the project maintainers.
 
 ---
 
-## Requisitos
-- **Docker Desktop** (o Podman) y **Docker Compose**.
+## Requirements
+- **Docker Desktop** (or Podman) and **Docker Compose**.
 - **Git**.
-- (Opcional) PHP 8.3 + Composer si deseas ejecutar fuera de contenedor.
+- (Optional) PHP 8.3 + Composer if you want to run outside containers.
 
-> Las versiones mínimas de servicios: MySQL 8, Redis 7, PHP 8.3. El entorno está preparado para levantarse con `docker compose` sin instalaciones locales adicionales.
+> Minimum service versions: MySQL 8, Redis 7, PHP 8.3. The environment is prepared to be brought up with `docker compose` without additional local installations.
 
 ---
 
-## Preparación del entorno local
-Clona el repositorio y levanta servicios:
+## Local Environment Setup
+Clone the repository and bring up the services:
 
 ```bash
-# 1) Clonar
-git clone https://github.com/<tu-usuario>/shortener.git
+# 1) Clone
+git clone https://github.com/<your-user>/shortener.git
 cd shortener
 
-# 2) Entorno
-cp .env.example .env  # o usa tu .env local
-# Ajusta credenciales y claves HMAC en .env (ver ENV.md)
+# 2) Environment
+cp .env.example .env  # or use your local .env
+# Adjust credentials and HMAC keys in .env (see ENV.md)
 
-# 3) Levantar stack
+# 3) Bring up the stack
 docker compose up -d
 
-# 4) Migrar/sembrar (primera vez)
+# 4) Migrate/seed (first time)
 docker compose exec app php artisan migrate --seed
 
-# 5) Ejecutar la suite de tests
+# 5) Run the test suite
 docker compose exec app ./vendor/bin/phpunit -d memory_limit=512M
 ```
 
-> **Nota**: El proyecto expone `/health` y `/metrics`. Redis se usa para colas y métricas (contador + histogramas).
+> **Note**: The project exposes `/health` and `/metrics`. Redis is used for queues and metrics (counters + histograms).
 
 ---
 
-## Estructura del repositorio
-- `app/` (código Laravel + **Dockerfile** runtime y CI)
-- `deploy/` (plantillas de despliegue: `docker-compose.prod.yml`, `shortener.env`)
-- `.github/workflows/ci.yml` (pipeline de tests + build/push de imagen)
-- `config/shortener.php` (configuración propia: HMAC, límites, k‑anon)
+## Repository Structure
+- `app/` (Laravel code + runtime and CI **Dockerfile**)
+- `deploy/` (deployment templates: `docker-compose.prod.yml`, `shortener.env`)
+- `.github/workflows/ci.yml` (pipeline for tests + build/push of image)
+- `config/shortener.php` (custom configuration: HMAC, limits, k‑anon)
 - `app/Services/` (`SlugService`, `MetricsContract`, `Metrics`)
-- `app/Http/Controllers/Web/RedirectController.php` (lógica HEAD‑safe, contador atómico, firma HMAC)
+- `app/Http/Controllers/Web/RedirectController.php` (HEAD‑safe logic, atomic counter, HMAC signature)
 - `routes/`, `resources/views/`, `database/`, `tests/`
 
 ---
 
-## Flujo de trabajo Git
-- Rama principal: **main** (protegida).
-- Crea ramas por cambio:
-  - `feat/<breve-descripcion>`
-  - `fix/<breve-descripcion>`
-  - `chore/<breve-descripcion>`
-  - `docs/<breve-descripcion>`
+## Git Workflow
+- Main branch: **main** (protected).
+- Create one branch per change:
+  - `feat/<short-description>`
+  - `fix/<short-description>`
+  - `chore/<short-description>`
+  - `docs/<short-description>`
 
-Ejemplo:
+Example:
 ```bash
-git checkout -b feat/limite-clicks-graceful
-# ... cambios ...
+git checkout -b feat/graceful-max-clicks-limit
+# ... changes ...
 git add .
 git commit -m "feat: enforce atomic max_clicks with 404 when exceeded"
-git push -u origin feat/limite-clicks-graceful
-# Abre un Pull Request hacia main
+git push -u origin feat/graceful-max-clicks-limit
+# Open a Pull Request to main
 ```
 
-> **No** hagas push directo a `main`. Todo cambio pasa por PR y CI.
+> **Do not** push directly to `main`. Every change must go through a PR and CI.
 
 ---
 
-## Estilo y calidad
-- **PSR-12**. Mantén funciones pequeñas, nombres claros y manejo explícito de errores.
-- Alineado con convenciones de Laravel (nombres de controladores, servicios, jobs).
-- **Formateo**: si usas *laravel/pint* localmente, ejecuta `./vendor/bin/pint` antes de commitear (opcional pero recomendado).
-- **Blade**: evita lógica compleja en vistas; delega a controladores/servicios.
-- **Seguridad**: nunca exponer secretos en logs o excepciones. Usa `config()` / ENV.
+## Style and Quality
+- **PSR-12**. Keep functions small, names clear and error handling explicit.
+- Aligned with Laravel conventions (controller, service and job names).
+- **Formatting**: if you use *laravel/pint* locally, run `./vendor/bin/pint` before committing (optional but recommended).
+- **Blade**: avoid complex logic in views; delegate to controllers/services.
+- **Security**: never expose secrets in logs or exceptions. Use `config()` / ENV.
 
 ---
 
 ## Tests
-Ejecuta la suite completa:
+Run the full suite:
 
 ```bash
 docker compose exec app ./vendor/bin/phpunit -d memory_limit=512M
 ```
 
-Cobertura recomendada: **≥ 80%** para nuevas funcionalidades (no bloqueante, pero se valora).
+Recommended coverage: **≥ 80%** for new features (not blocking, but appreciated).
 
-Cubre especialmente:
-- **SlugService**: generación/parsing, firma HMAC.
-- **RedirectController**: HEAD‑safe (no consume click), caducidad, *ban*, firma inválida, límite de clics atómico.
-- **API** (crear/consultar/ban/borrar): límites de rate, dominios/esquemas permitidos.
-- **SecurityHeaders** del panel.
-- **Métricas**: contadores y histogramas (al menos *smoke tests* en rutas críticas).
+Pay special attention to:
+- **SlugService**: generation/parsing, HMAC signature.
+- **RedirectController**: HEAD‑safe (does not consume click), expiration, *ban*, invalid signature, atomic click limit.
+- **API** (create/show/ban/delete): rate limits, allowed domains/schemes.
+- **SecurityHeaders** of the panel.
+- **Metrics**: counters and histograms (at least smoke tests on critical routes).
 
-Si introduces endpoints o lógica nueva, añade tests equivalentes. Los tests **no** deben depender de red externa.
+If you introduce new endpoints or logic, add equivalent tests. Tests **must not** depend on external networks.
 
 ---
 
-## Commits y mensajes
-Usa **Conventional Commits**:
+## Commits and Messages
+Use **Conventional Commits**:
 
-- `feat: …` nueva funcionalidad
-- `fix: …` corrección de bug
-- `docs: …` documentación (README, ENV.md, etc.)
+- `feat: …` new functionality
+- `fix: …` bug fix
+- `docs: …` documentation (README, ENV.md, etc.)
 - `test: …` tests
-- `refactor: …` refactor sin cambios funcionales
-- `ci: …` cambios de pipeline/acciones
-- `chore: …` tareas generales (dependencias, scripts)
+- `refactor: …` refactor without functional changes
+- `ci: …` pipeline/actions changes
+- `chore: …` general tasks (dependencies, scripts)
 
-Ejemplos:
+Examples:
 ```
 feat: add k-anon aggregation and endpoint for stats
 fix: avoid null HMAC key on CI by loading from config
@@ -145,79 +145,79 @@ ci: buildx with gha cache and dockerhub push
 docs: add DEPLOYMENT and OBSERVABILITY guides
 ```
 
-Commits pequeños y atómicos. Mensajes en **imperativo** y con contexto.
+Small, atomic commits. Messages in **imperative mood** and with context.
 
 ---
 
 ## Pull Requests
-Criterios para abrir PR:
-- Tests en verde localmente.
-- Actualiza documentación si cambian variables, endpoints o seguridad.
-- Describe **qué**, **por qué** y **cómo** probar. Si aplica, añade captura o logs de prueba.
+Criteria for opening a PR:
+- Green tests locally.
+- Update documentation if variables, endpoints or security change.
+- Describe **what**, **why** and **how** to test. If applicable, add a screenshot or test logs.
 
-**Checklist PR**:
-- [ ] Cambios enfocados (un tema por PR).
-- [ ] Sin secretos ni credenciales.
-- [ ] `ENV.md`/`OBSERVABILITY.md` actualizados si aplica.
-- [ ] Suite PHPUnit en verde.
-- [ ] Revisión de *edge cases* (errores de firma, expiración, límites, cola caída).
+**PR Checklist**:
+- [ ] Focused changes (one topic per PR).
+- [ ] No secrets or credentials.
+- [ ] `ENV.md`/`OBSERVABILITY.md` updated if applicable.
+- [ ] PHPUnit suite green.
+- [ ] Edge cases reviewed (signature errors, expiration, limits, queue down).
 
-Plantilla breve para la descripción:
+Short template for the description:
 ```
-### Resumen
-Describe brevemente el cambio.
+### Summary
+Briefly describe the change.
 
-### Motivación
-¿Por qué es necesario? ¿Qué problema resuelve?
+### Motivation
+Why is it needed? What problem does it solve?
 
-### Cómo probar
-Pasos, comandos y datos de prueba.
+### How to test
+Steps, commands and test data.
 
-### Riesgos
-Impacto en seguridad, latencia, almacenamiento o compatibilidad.
+### Risks
+Impact on security, latency, storage or compatibility.
 ```
 
 ---
 
 ## CI/CD
-- La acción `.github/workflows/ci.yml`:
-  1. Ejecuta PHPUnit (entorno `app/`).
-  2. Hace **build & push** de la imagen Docker (`latest`) a tu registro.
-- Configura en GitHub **Settings ▸ Secrets and variables ▸ Actions**:
-  - `DOCKERHUB_USERNAME` (o variables equivalentes para tu registro),
-  - `DOCKERHUB_REPO` (p. ej. `tu_usuario/shortener`),
-  - `DOCKERHUB_TOKEN` (token de acceso).
+- The `.github/workflows/ci.yml` action:
+  1. Runs PHPUnit (environment `app/`).
+  2. Builds & pushes the Docker image (`latest`) to your registry.
+- Configure in GitHub **Settings ▸ Secrets and variables ▸ Actions**:
+  - `DOCKERHUB_USERNAME` (or equivalent variables for your registry),
+  - `DOCKERHUB_REPO` (e.g. `your_user/shortener`),
+  - `DOCKERHUB_TOKEN` (access token).
 
-Errores típicos y remedios están documentados en `DEPLOYMENT.md`.
-
----
-
-## Documentación
-Si tu PR afecta a:
-- Variables de entorno → actualiza **ENV.md** (+ ejemplos).
-- Observabilidad → actualiza **OBSERVABILITY.md** (métricas, paneles).
-- Overview/uso → actualiza **README.md**.
-
-Añade entradas a **CHANGELOG.md** bajo `[Unreleased]` siguiendo *Keep a Changelog*.
+Typical errors and remedies are documented in `DEPLOYMENT.md`.
 
 ---
 
-## Seguridad
-- **Claves y secretos**: nunca en commits. Usa ENV y secretos del sistema (Docker, CI).
-- **HMAC**: `SHORTENER_HMAC_KEY` debe ser **secreta** y con suficiente entropía/Base64.
-- **Rate limits**: mantén límites razonables para evitar abuso (`SHORTENER_MAX_*`).
-- **Cabeceras**: no las relajes sin justificar. Panel con CSP, HSTS, X‑Frame‑Options, etc.
-- **Logs**: no registrar datos sensibles (URLs completas si contienen secretos, IPs sin necesidad, etc.).
-- **Colas**: si se caen, la redirección debe seguir siendo segura (perdida de analítica, nunca de seguridad).
+## Documentation
+If your PR affects:
+- Environment variables → update **ENV.md** (+ examples).
+- Observability → update **OBSERVABILITY.md** (metrics, dashboards).
+- Overview/usage → update **README.md**.
 
-Cambios que afecten a seguridad requieren una sección de **Riesgos** en el PR y pruebas específicas.
+Add entries to **CHANGELOG.md** under `[Unreleased]` following *Keep a Changelog*.
 
 ---
 
-## Reporte de vulnerabilidades
-No abras issues públicos para vulnerabilidades. Usa **GitHub Security Advisories** o contacta a los Maintainers. Proporciona detalles y pasos de reproducción si es posible.
+## Security
+- **Keys and secrets**: never in commits. Use ENV and the system's secret store (Docker, CI).
+- **HMAC**: `SHORTENER_HMAC_KEY` must be **secret** and have enough entropy/Base64.
+- **Rate limits**: keep reasonable limits to prevent abuse (`SHORTENER_MAX_*`).
+- **Headers**: do not relax them without justification. Panel with CSP, HSTS, X‑Frame‑Options, etc.
+- **Logs**: do not log sensitive data (full URLs if they contain secrets, IPs unnecessarily, etc.).
+- **Queues**: if they go down, the redirect must remain safe (loss of analytics, never of security).
+
+Changes that affect security require a **Risks** section in the PR and specific tests.
 
 ---
 
-## Licencia
-Al contribuir, aceptas que tu contribución se licencie bajo la licencia del proyecto indicada en `LICENSE`.
+## Vulnerability Reporting
+Do not open public issues for vulnerabilities. Use **GitHub Security Advisories** or contact the maintainers. Provide details and reproduction steps if possible.
+
+---
+
+## License
+By contributing, you agree that your contribution is licensed under the project license indicated in `LICENSE`.
