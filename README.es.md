@@ -10,6 +10,7 @@
 
 ## Tabla de contenido
 - [Características](#características)
+- [Capturas](#capturas)
 - [Arquitectura](#arquitectura)
 - [Seguridad](#seguridad)
 - [Requisitos](#requisitos)
@@ -40,6 +41,30 @@
 - ✅ **Pruebas** (PHPUnit) cubriendo slug/HMAC, redirect, headers y API básica.
 - ✅ **Docker** multi‑stage (sin Composer en *runtime*).
 - ✅ **CI**: GitHub Actions (tests; build & push de imagen opcional si hay secretos).
+
+---
+
+## Capturas
+
+**Panel**
+![Panel](docs/images/panel.png)
+
+**Crear enlace**
+![Crear enlace](docs/images/create-link.png)
+
+**Redirección (302)**
+<p align="center">
+  <img src="docs/images/demo.gif" alt="Demo de redirección 302: clic en slug y carga de destino" width="900">
+</p>
+
+**Detalles del enlace**
+![Detalles](docs/images/details-link.png)
+
+**/metrics (Prometheus)**
+![Métricas](docs/images/metrics.png)
+
+**/health**
+![Health](docs/images/health.png)
 
 ---
 

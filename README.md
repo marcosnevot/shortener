@@ -10,6 +10,7 @@
 
 ## Table of contents
 - [Features](#features)
+- [Screenshots](#screenshots)
 - [Architecture](#architecture)
 - [Security](#security)
 - [Requirements](#requirements)
@@ -40,6 +41,30 @@
 - ✅ **Tests** (PHPUnit) covering slug/HMAC, redirect, headers, and basic API.
 - ✅ **Multi-stage Docker** (no Composer in *runtime*).
 - ✅ **CI**: GitHub Actions (tests; optional image build & push if secrets exist).
+
+---
+
+## Screenshots
+
+**Panel**
+![Panel](docs/images/panel.png)
+
+**Create link**
+![Create link](docs/images/create-link.png)
+
+**Redirection (302)**
+<p align="center">
+  <img src="docs/images/demo.gif" alt="Redirection 302 Demo: click on slug and load target" width="900">
+</p>
+
+**Link Details**
+![Details](docs/images/details-link.png)
+
+**/metrics (Prometheus)**
+![Metrics](docs/images/metrics.png)
+
+**/health**
+![Health](docs/images/health.png)
 
 ---
 
