@@ -1,0 +1,189 @@
+/* ==== Variables & Base ===================================================== */
+:root{
+  --bg:#0b0b0c;
+  --bg2:#0f0f12;
+  --surface:#131317;
+  --elev:#191a20;
+  --muted:#a8a8b3;
+  --text:#e7e7ee;
+  --primary:#63a1ff;
+  --primary-600:#438eff;
+  --danger:#ff5b6b;
+  --warn:#ffb454;
+  --ok:#1dd1a1;
+  --border:#262730;
+  --focus-ring: 0 0 0 3px rgba(99,161,255,.25);
+  --radius:14px;
+
+  /* sizing */
+  --container:1080px;
+  --space-1:6px; --space-2:10px; --space-3:14px; --space-4:16px; --space-5:20px;
+
+  /* typography */
+  --fs-xs:12px; --fs-sm:13px; --fs-md:14px; --fs-lg:16px; --fs-xl:20px;
+
+  /* footer */
+  --footer-h: 52px;
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{
+  margin:0;
+  background:
+    radial-gradient(1200px 600px at -10% -20%, #14202f 0%, transparent 60%),
+    radial-gradient(1000px 600px at 120% 20%, #1a142f 0%, transparent 50%),
+    var(--bg);
+  color:var(--text);
+  font: var(--fs-md)/1.45 system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Arial;
+  -webkit-font-smoothing:antialiased;
+  text-rendering:optimizeLegibility;
+
+  /* reserva para el footer fijo */
+  padding-bottom: var(--footer-h);
+}
+img{max-width:100%;display:block}
+a{color:inherit}
+a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible {
+  outline:none; box-shadow:var(--focus-ring); border-color:#35518a;
+}
+
+/* ==== Layout =============================================================== */
+.container{max-width:var(--container);margin:0 auto;padding:var(--space-3) var(--space-4)}
+.site-header{position:sticky;top:0;z-index:50;backdrop-filter:saturate(1.2) blur(8px);
+  background:linear-gradient(180deg, rgba(15,16,20,.85), rgba(15,16,20,.65));
+  border-bottom:1px solid var(--border);}
+.topbar{display:flex;align-items:center;gap:var(--space-3)}
+.brand{display:flex;align-items:center;gap:10px;text-decoration:none}
+.brand-badge{width:28px;height:28px;border-radius:8px;display:grid;place-items:center;
+  background:linear-gradient(135deg,#2a3350,#111826); border:1px solid #2b2f3a}
+.brand-icon{width:16px;height:16px;color:var(--primary)}
+.brand-text{font-weight:700;letter-spacing:.3px}
+.topnav{margin-left:auto}
+
+.site-main{display:grid;gap:var(--space-4);margin-block:var(--space-4)}
+
+/* footer fijo al borde inferior */
+.site-footer{
+  position:fixed; left:0; right:0; bottom:0; z-index:40;
+  border-top:1px solid var(--border);
+  background:linear-gradient(180deg,var(--surface),var(--elev));
+  backdrop-filter:saturate(1.1) blur(6px);
+  height:var(--footer-h);
+}
+.site-footer .container{
+  display:flex; align-items:center; justify-content:flex-start;
+  height:100%;
+  padding-top:0; padding-bottom:0;
+}
+
+/* ==== Cards & Toolbars ===================================================== */
+.card{
+  background:linear-gradient(180deg,var(--surface),var(--elev));
+  border:1px solid var(--border);
+  border-radius:var(--radius);
+  padding:var(--space-4);
+}
+.card-toolbar{display:flex;justify-content:space-between;align-items:center;gap:var(--space-3);margin-bottom:var(--space-2)}
+.card-toolbar .toolbar-right{display:flex;gap:8px}
+.h3{margin:0 0 var(--space-2) 0; font-size:var(--fs-lg);}
+
+/* ==== Typography utils ===================================================== */
+.muted{color:var(--muted)}
+.center{text-align:center}
+.mt-2{margin-top:8px}
+.break-all{word-break:break-all}
+
+/* ==== Grid & Rows ========================================================== */
+.grid{display:grid;gap:var(--space-2)}
+.cols-1{grid-template-columns:1fr}
+.md\:cols-3{grid-template-columns:1fr}
+@media (min-width:700px){ .md\:cols-3{grid-template-columns:1.6fr .9fr .7fr} }
+
+.row{display:flex;gap:var(--space-2);flex-wrap:wrap}
+.row.wrap-gap>*{margin-right:0}
+.align-center{align-items:center}
+.col{min-width:0}
+.flex-6{flex:1.2}
+.flex-4{flex:.8}
+.center{display:grid;place-items:center}
+
+/* ==== Forms ================================================================ */
+input,button,select{
+  background:var(--bg2); color:var(--text); border:1px solid var(--border);
+  border-radius:10px; padding:10px 12px; outline:none; transition:.2s border,.2s transform,.2s box-shadow;
+}
+input::placeholder{color:#80808c}
+button{cursor:pointer}
+.label{display:block;margin-bottom:6px}
+.form-field{display:block}
+.form-error{margin-top:6px;color:#ff8f98;font-size:var(--fs-sm)}
+.row .btn{flex:0}
+
+/* Buttons */
+.btn{background:linear-gradient(180deg,#0f1724,#0c131e);border:1px solid #233146}
+.btn:hover{transform:translateY(-1px); border-color:#2e4a79}
+.btn-primary{background:linear-gradient(180deg,#0f2a54,#0d1e3a); border:1px solid #2b4b84}
+.btn-primary:hover{border-color:var(--primary-600)}
+.btn-ghost{background:transparent}
+.btn-danger{background:linear-gradient(180deg,#2b1216,#210d10); border:1px solid #4a2329; color:#ffdfe2}
+.btn-danger:hover{border-color:#6a2e36}
+.btn[disabled]{opacity:.6;cursor:not-allowed}
+
+/* Loading state for buttons */
+.btn.is-loading{position:relative;pointer-events:none}
+.btn.is-loading .spinner{
+  display:inline-block; width:1em; height:1em; border:2px solid #ffffff55; border-top-color:#fff;
+  border-radius:50%; animation:spin .8s linear infinite; vertical-align:-2px; margin-right:8px;
+}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ==== Badges / Tags ======================================================== */
+.pill{display:inline-flex;align-items:center;gap:6px;padding:4px 8px;border-radius:999px;font-size:12px;border:1px solid var(--border);background:var(--bg2)}
+.pill.ok{border-color:#125e4b;background:#0f2b23;color:#99f1d9}
+.pill.warn{border-color:#5f481b;background:#2c2210;color:#ffd79a}
+.pill.bad{border-color:#5a1c24;background:#2b1216;color:#ffb7c0}
+.tag{display:inline-block;padding:4px 8px;border:1px solid var(--border);border-radius:8px;background:#0e0f14;color:#b6bbcc;font-size:12px}
+
+/* ==== Links ================================================================ */
+.link{color:var(--primary);text-decoration:none}
+.link:hover{text-decoration:underline}
+
+/* ==== Table ================================================================ */
+.table-wrap{overflow:auto;border-radius:12px;border:1px solid var(--border)}
+.table{width:100%;border-collapse:separate;border-spacing:0}
+thead th{position:sticky;top:0;background:#12131a;border-bottom:1px solid var(--border);text-align:left;padding:10px;font-weight:600}
+tbody td{padding:10px;border-bottom:1px solid #1a1b24; vertical-align:top}
+tbody tr:hover{background:#12141c}
+.right{text-align:right}
+.inline{display:inline}
+
+/* ==== Pagination (Laravel default markup compatible) ======================= */
+.pagination-wrap nav[role="navigation"]{display:flex;justify-content:center;padding:12px}
+.pagination-wrap nav a,
+.pagination-wrap nav span{
+  display:inline-block;margin:0 4px;padding:6px 10px;border:1px solid var(--border);border-radius:8px;background:var(--bg2);
+}
+.pagination-wrap nav .hidden{display:none}
+
+/* ==== Toast ================================================================ */
+.toast{
+  position:fixed;right:16px;bottom:16px;z-index:100;background:#0e3b1f;border:1px solid #1e7a3d;color:#c6ffe7;
+  border-radius:12px;padding:12px 14px;box-shadow:0 6px 24px rgba(0,0,0,.35);
+  opacity:0;transform:translateY(8px);transition:.2s; pointer-events:none;
+}
+.toast.show{opacity:1;transform:none; pointer-events:auto}
+
+/* ==== Donut ================================================================ */
+.donut{--p:0; --size:120px; width:var(--size); height:var(--size); border-radius:50%;
+  background:conic-gradient(var(--primary) calc(var(--p)*1%), #23242c 0); display:grid; place-items:center;position:relative}
+.donut::after{content:""; position:absolute; width:calc(var(--size) - 24px); height:calc(var(--size) - 24px);
+  background:var(--surface); border-radius:50%}
+.donut figcaption{position:relative; z-index:1; font-weight:700}
+
+/* ==== Media / Prefs ======================================================= */
+@media (max-width:700px){
+  .short-cell{min-width:240px}
+}
+@media (prefers-reduced-motion: reduce){
+  *{transition:none !important; animation:none !important}
+}
