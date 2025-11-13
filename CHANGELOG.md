@@ -7,49 +7,49 @@ The format is based on **Keep a Changelog** and this project adheres to **Semant
 
 ### Added
 - (Docs) ENV.md, OBSERVABILITY.md, OPERATIONS.md, CONTRIBUTING.md.
-- (CI) GitHub Actions workflow: ejecuta PHPUnit y build & push de la imagen Docker usando Buildx + caché GHA.
+- (CI) GitHub Actions workflow: runs PHPUnit and builds & pushes the Docker image using Buildx + GHA cache.
 
 
 ### Changed
-- (Security) Endurecimiento de cabeceras HTTP en middleware `SecurityHeaders`.
-- (Build) Dockerfile multi-stage en `app/` optimizado: vendor en stage `composer`, runtime `php:8.3-fpm-alpine`, opcache.
-- (Metrics) Contrato `MetricsContract` y clase `Metrics` con contador y histogramas (Redis) + endpoint `/metrics` (Prometheus).
+- (Security) Hardening of HTTP headers in `SecurityHeaders` middleware.
+- (Build) Optimized multi-stage Dockerfile in `app/`: vendor in `composer` stage, runtime `php:8.3-fpm-alpine`, opcache.
+- (Metrics) `MetricsContract` interface and `Metrics` class with counters and histograms (Redis) + `/metrics` endpoint (Prometheus).
 
 ### Fixed
-- (CI) Fijado error de *“Please provide a valid cache path”* creando `bootstrap/cache` y apuntando `VIEW_COMPILED_PATH` en tests.
-- (Slug) Firma HMAC inyectada desde `config('shortener.hmac_key')` para evitar `null` en CI.
-- (Docker) Error de permisos copiando `storage/` y `bootstrap/cache` durante build.
+- (CI) Fixed “Please provide a valid cache path” error by creating `bootstrap/cache` and pointing `VIEW_COMPILED_PATH` in tests.
+- (Slug) HMAC signature injected from `config('shortener.hmac_key')` to avoid `null` in CI.
+- (Docker) Permission error when copying `storage/` and `bootstrap/cache` during build.
 
 ---
 
 ## [0.1.0] - 2025-11-12
-Primera versión pública (MVP) del **URL Shortener con firmas HMAC y analítica privacy-first**.
+First public release (MVP) of the **URL Shortener with HMAC signatures and privacy-first analytics**.
 
 ### Added
-- Acortado de URLs con *slugs* firmados (HMAC) y base62: creación, lectura, *ban*, borrado.
-- Panel web (Blade) minimalista para gestión.
-- Lógica de resolución con:
-  - Verificación de firma,
-  - Control de expiración,
-  - Límite de clics atómico,
-  - HEAD-safe (no consume click).
-- Analítica privacy-first:
-  - Job `IngestClickEvent` en cola `analytics`,
-  - Agregación a tabla `clicks_agg` (k-anon).
-- Seguridad:
-  - Lista blanca de esquemas (`SHORTENER_ALLOWED_SCHEMES`),
-  - Rate limits de creación y resolución,
-  - Cabeceras de seguridad.
-- Observabilidad:
-  - `/health` y `/metrics` (Prometheus),
-  - Métricas: `redirect_requests_total`, `redirect_duration_seconds`, métricas de API.
+- URL shortening with signed (HMAC) base62 slugs: create, read, ban, delete.
+- Minimalist web panel (Blade) for management.
+- Resolution logic with:
+  - Signature verification,
+  - Expiration control,
+  - Atomic click limit,
+  - HEAD-safe (does not consume a click).
+- Privacy-first analytics:
+  - `IngestClickEvent` job on `analytics` queue,
+  - Aggregation into `clicks_agg` table (k-anon).
+- Security:
+  - Scheme whitelist (`SHORTENER_ALLOWED_SCHEMES`),
+  - Rate limits for creation and resolution,
+  - Security headers.
+- Observability:
+  - `/health` and `/metrics` (Prometheus),
+  - Metrics: `redirect_requests_total`, `redirect_duration_seconds`, API metrics.
 - Infra:
   - Dockerfile (multi-stage),
   - Docker Compose (local),
-  - Pipeline de CI/CD (GitHub Actions) con build & push a registro.
+  - CI/CD pipeline (GitHub Actions) with build & push to registry.
 
 ### Notes
-- Requiere MySQL 8, Redis 7 y PHP 8.3.
-- Habilitar variables/secrets para el *push* de imágenes en el pipeline.
+- Requires MySQL 8, Redis 7 and PHP 8.3.
+- Enable variables/secrets for image push in the pipeline.
 
 [0.1.0]: https://github.com/marcosnevot/shortener/releases/tag/v0.1.0
