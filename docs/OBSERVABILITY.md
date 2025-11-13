@@ -1,16 +1,16 @@
 # OBSERVABILITY.md — Shortener
 
-Guía práctica para **observar, medir y diagnosticar** el proyecto en **local** y en **CI** (y, opcionalmente, en despliegues que puedas hacer en el futuro). Cubre *health checks*, métricas (formato Prometheus), logs, paneles y reglas de alerta de ejemplo, además de pequeños runbooks.
+Practical guide to **observing, measuring and troubleshooting** the project in **local** and in **CI** (and, optionally, in any deployments you may do in the future). It covers health checks, metrics (Prometheus text format), logs, dashboards and example alert rules, plus short runbooks.
 
-> **Stack**: Laravel 12 (PHP‑FPM), MySQL 8, Redis 7. Servicio `Metrics` propio que persiste contadores e histogramas en Redis y expone `/metrics` en texto Prometheus. Middleware de cabeceras de seguridad activado. CI con GitHub Actions ejecutando tests y (opcional) build & push de imagen Docker si existen *secrets* de Docker Hub.
+> **Stack**: Laravel 12 (PHP‑FPM), MySQL 8, Redis 7. Custom `Metrics` service that persists counters and histograms in Redis and exposes `/metrics` in Prometheus text format. Security headers middleware enabled. CI with GitHub Actions running tests and (optionally) building & pushing the Docker image if Docker Hub secrets are configured.
 
 ---
 
 ## 1) Health checks
 
 ### 1.1 Endpoint
-- **`GET /health`** devuelve `200` con un JSON mínimo cuando las dependencias básicas están OK.
-- **Payload sugerido**:
+- **`GET /health`** returns `200` with a minimal JSON payload when the basic dependencies are OK.
+- **Suggested payload**:
   ```json
   {
     "status": "ok",
@@ -22,45 +22,45 @@ Guía práctica para **observar, medir y diagnosticar** el proyecto en **local**
     }
   }
   ```
-- *Fail‑fast*: si la conectividad con DB/Redis falla, responder `503`.
+- *Fail-fast*: if connectivity to DB/Redis fails, respond with `503`.
 
-> En local lo puedes usar para *smoke checks* y en CI para comprobaciones rápidas con `curl`.
+> Locally you can use it for *smoke checks* and in CI for quick checks with `curl`.
 
-### 1.2 Health local rápido
+### 1.2 Quick local health
 ```bash
 curl -s http://localhost:8080/health | jq .
 ```
 
 ---
 
-## 2) Métricas (formato Prometheus)
+## 2) Metrics (Prometheus format)
 
-### 2.1 Diseño
-- Implementación en `App\Services\Metrics` (`MetricsContract`):
+### 2.1 Design
+- Implementation in `App\Services\Metrics` (`MetricsContract`):
   - **Counters** → `counterInc($name, array $labels = [], int|float $value = 1)`
-  - **Histograms** → `histogramObserve($name, float $seconds, array $labels = [], array $buckets = null)` (buckets acumulativos)
-- Claves en Redis:
-  - Contadores: `metrics:cnt:{name}:{labelKey}`
-  - Histogramas: `metrics:hist:{name}:{le}:{labelKey}` (+ `:sum:` y `:count:`)
-  - Índices auxiliares para enumerar *names*, *buckets* y *label sets* (evita `SCAN` en *hot path*).
+  - **Histograms** → `histogramObserve($name, float $seconds, array $labels = [], array $buckets = null)` (cumulative buckets)
+- Keys in Redis:
+  - Counters: `metrics:cnt:{name}:{labelKey}`
+  - Histograms: `metrics:hist:{name}:{le}:{labelKey}` (+ `:sum:` and `:count:`)
+  - Auxiliary indexes to enumerate *names*, *buckets* and *label sets* (avoids using `SCAN` on the hot path).
 - **`/metrics`**:
-  - Lee Redis y **renderiza** el formato de texto de Prometheus (HELP/TYPE, *samples*, *labels*).
+  - Reads Redis and **renders** Prometheus text format (HELP/TYPE, samples, labels).
 
-> En CI se usa una `SHORTENER_HMAC_KEY` dummy y rutas temporales para *view/cache* a fin de satisfacer las pruebas.
+> In CI a dummy `SHORTENER_HMAC_KEY` is used and temporary paths for *view/cache* are set so tests can run.
 
-### 2.2 Métricas actuales
+### 2.2 Current metrics
 
 1) **`redirect_requests_total`** (counter)  
 **Labels**: `result ∈ {ok, bad_slug, bad_sig, not_found, banned, expired, limit_reached}`  
-Se incrementa al finalizar cada intento de resolución/redirect.
+Incremented at the end of every resolution/redirect attempt.
 
 2) **`redirect_duration_seconds`** (histogram)  
-**Labels**: `result="ok"` (por defecto medimos la ruta exitosa)  
-**Buckets** por defecto: `[0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1, 2.5, 5, +Inf]`
+**Labels**: `result="ok"` (by default we measure the successful path)  
+**Default buckets**: `[0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1, 2.5, 5, +Inf]`
 
-> Convención: *lower_snake_case*, e incluir unidad en el nombre (p. ej. `_seconds`), y documentar **cada label** para evitar explosión de cardinalidad.
+> Convention: *lower_snake_case*, include the unit in the name (e.g. `_seconds`), and document **every label** to avoid a cardinality explosion.
 
-### 2.3 Salida de ejemplo
+### 2.3 Sample output
 ```
 # HELP redirect_requests_total Total redirect requests by result
 # TYPE redirect_requests_total counter
@@ -78,8 +78,8 @@ redirect_duration_seconds_sum{result="ok"} 10.42
 redirect_duration_seconds_count{result="ok"} 123
 ```
 
-### 2.4 *Scrape* con Prometheus (opcional)
-Si quieres ver las métricas con Prometheus/Grafana **en local**, crea un fichero `prometheus.yaml` mínimo:
+### 2.4 Scraping with Prometheus (optional)
+If you want to see the metrics with Prometheus/Grafana **locally**, create a minimal `prometheus.yaml` file:
 
 ```yaml
 global:
@@ -89,27 +89,27 @@ scrape_configs:
   - job_name: shortener
     metrics_path: /metrics
     static_configs:
-      - targets: ["host.docker.internal:8080"]  # si Prometheus está en Docker
-      # - targets: ["localhost:8080"]          # si Prometheus corre nativo
+      - targets: ["host.docker.internal:8080"]  # if Prometheus is in Docker
+      # - targets: ["localhost:8080"]          # if Prometheus runs natively
 ```
 
-Y levántalo (contenedor rápido):
+And start it (quick container):
 ```bash
 docker run --rm -p 9090:9090 -v ${PWD}/prometheus.yaml:/etc/prometheus/prometheus.yml prom/prometheus
-# Abre http://localhost:9090 y busca redirect_requests_total
+# Open http://localhost:9090 and search for redirect_requests_total
 ```
 
-> Si usas WSL/Windows, `host.docker.internal` te simplifica el acceso desde contenedores a tu host.
+> If you use WSL/Windows, `host.docker.internal` simplifies access from containers to your host.
 
-### 2.5 SLOs orientativos
-- **p95 latency** de redirect: **< 50 ms** (en el mismo DC) o **< 90 ms** (edge).
-- **Error ratio** redirect (resultados *bad_*, `expired`, `not_found`, `limit_reached`): **< 0.1%**.
-- **Disponibilidad** de `/health`: **≥ 99.9%** mensual.
-- **Lag de cola** (si activas analítica asíncrona): **p95 < 2 s**.
+### 2.5 Suggested SLOs
+- **p95 latency** for redirects: **< 50 ms** (same DC) or **< 90 ms** (edge).
+- **Redirect error ratio** (results *bad_*, `expired`, `not_found`, `limit_reached`): **< 0.1%**.
+- **Availability** of `/health`: **≥ 99.9%** monthly.
+- **Queue lag** (if you enable asynchronous analytics): **p95 < 2 s**.
 
-**PromQL útil**:
+**Useful PromQL**:
 ```promql
-# p95 (ventana 5m)
+# p95 (5m window)
 histogram_quantile(0.95, sum by (le) (rate(redirect_duration_seconds_bucket[5m])))
 
 # Error ratio (5m)
@@ -117,17 +117,17 @@ sum(rate(redirect_requests_total{result=~"bad_.*|expired|not_found|limit_reached
 /
 sum(rate(redirect_requests_total[5m]))
 
-# Picos de firmas inválidas (key mismatch / tampering)
+# Spikes of invalid signatures (key mismatch / tampering)
 rate(redirect_requests_total{result="bad_sig"}[5m])
 ```
 
 ---
 
-## 3) Alertas (ejemplos)
+## 3) Alerts (examples)
 
-> Úsalas como *plantillas* si montas Prometheus + Alertmanager. Ajusta umbrales a tu tráfico.
+> Use these as *templates* if you set up Prometheus + Alertmanager. Adjust thresholds to your traffic.
 
-**Latencia p95 alta**
+**High p95 latency**
 ```yaml
 groups:
 - name: shortener-latency
@@ -138,10 +138,10 @@ groups:
     labels: {severity: page}
     annotations:
       summary: "p95 redirect latency > 90ms"
-      description: "Revisar DB/Redis, saturación Nginx/PHP-FPM, o red."
+      description: "Check DB/Redis, Nginx/PHP-FPM saturation, or network."
 ```
 
-**Error ratio alto**
+**High error ratio**
 ```yaml
 - name: shortener-errors
   rules:
@@ -154,10 +154,10 @@ groups:
     labels: {severity: page}
     annotations:
       summary: "Redirect error ratio > 1%"
-      description: "Buscar picos de bad_sig (clave?), not_found (borrados), expired o limit_reached."
+      description: "Look for spikes in bad_sig (key?), not_found (deletions), expired or limit_reached."
 ```
 
-**Pico de firmas inválidas**
+**Spike of invalid signatures**
 ```yaml
 - name: shortener-anomalies
   rules:
@@ -166,85 +166,85 @@ groups:
     for: 10m
     labels: {severity: ticket}
     annotations:
-      summary: "Aumento de firmas inválidas"
-      description: "Posible desajuste de SHORTENER_HMAC_KEY o tráfico malicioso."
+      summary: "Increase in invalid signatures"
+      description: "Possible SHORTENER_HMAC_KEY mismatch or malicious traffic."
 ```
 
 ---
 
 ## 4) Logs
 
-### 4.1 Formato
-- En producción (si lo montas) prioriza **JSON logs** para parseo automático (Loki/ELK/CloudWatch). Ejemplo:
+### 4.1 Format
+- In production (if you set it up) prefer **JSON logs** for automatic parsing (Loki/ELK/CloudWatch). Example:
   ```json
   {"ts":"2025-01-01T12:00:00.000Z","level":"info","msg":"redirect","slug":"AbC_xYz12","result":"ok","ip":"203.0.113.10","ua":"Mozilla/5.0"}
   ```
-- **Evita PII**. No loguees URLs con *tokens* u otros secretos.
+- **Avoid PII**. Do not log URLs with *tokens* or other secrets.
 
 ### 4.2 Laravel
-- `.env` típico:
+- Typical `.env`:
   ```dotenv
   LOG_CHANNEL=stack
   LOG_STACK=single
   LOG_LEVEL=info
   ```
-- Si usas JSON, define un *channel* específico en `config/logging.php`.
-- Rotación a nivel plataforma (Docker / sistema) o usa el canal `daily` con retención.
+- If you use JSON, define a specific *channel* in `config/logging.php`.
+- Rotate logs at platform level (Docker / system) or use the `daily` channel with retention.
 
-### 4.3 Campos útiles
-- `request_id` (si lo inyectas por request)
+### 4.3 Useful fields
+- `request_id` (if you inject one per request)
 - `result`, `slug`, `link_id`, `ip`, `ua`, `referrer`
-- Para *jobs*: `job`, `queue`, `duration_ms`, `result`
+- For *jobs*: `job`, `queue`, `duration_ms`, `result`
 
 ---
 
-## 5) Dashboards (Grafana) — sugerencias
+## 5) Dashboards (Grafana) — suggestions
 
-Crea **Shortener / Overview** con paneles:
+Create **Shortener / Overview** with panels:
 
-1. **Tráfico por resultado**: `sum by (result) (rate(redirect_requests_total[5m]))`
-2. **Latencias p50/p90/p95/p99** con `histogram_quantile(...)` sobre `redirect_duration_seconds_bucket`
+1. **Traffic by result**: `sum by (result) (rate(redirect_requests_total[5m]))`
+2. **Latencies p50/p90/p95/p99** with `histogram_quantile(...)` over `redirect_duration_seconds_bucket`
 3. **Error ratio**
-4. **Evolución por resultado** (apilado)
+4. **Trend by result** (stacked)
 5. **Bad signature rate**
 6. **Limit hits**: `rate(redirect_requests_total{result="limit_reached"}[5m])`
-7. **DB/Redis y CPU/mem** (exporters) / cAdvisor
-8. **Cola analytics** (si la activas)
+7. **DB/Redis and CPU/mem** (exporters) / cAdvisor
+8. **Analytics queue** (if you enable it)
 
 ---
 
-## 6) *Tracing* (opcional)
+## 6) Tracing (optional)
 
-Si necesitas *end‑to‑end tracing*:
-- OpenTelemetry (lib/ext PHP) + OTEL Collector.
-- Vars típicas:
+If you need *end‑to‑end tracing*:
+- OpenTelemetry (PHP lib/ext) + OTEL Collector.
+- Typical vars:
   ```dotenv
   OTEL_SERVICE_NAME=shortener
   OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4317
   OTEL_TRACES_SAMPLER=parentbased_traceidratio
   OTEL_TRACES_SAMPLER_ARG=0.05
   ```
-- Empieza con *sampling* 1–5% y súbelo en incidentes.
+- Start with a 1–5% *sampling* rate and increase it during incidents.
 
 ---
 
-## 7) Runbooks (rápidos)
+## 7) Runbooks (quick)
 
-### 7.1 Latencia alta
-- Verifica Redis/DB y CPU.
-- Revisa saturación de Nginx/PHP‑FPM (workers, *opcache*).
-- Comprueba *egress* (DNS, TLS al destino si proxéas).
+### 7.1 High latency
+- Check Redis/DB and CPU.
+- Review Nginx/PHP‑FPM saturation (workers, *opcache*).
+- Check *egress* (DNS, TLS to the target if you proxy).
 
-### 7.2 Picos de `bad_sig`
-- Asegura que `SHORTENER_HMAC_KEY` es uniforme en instancias.
-- Confirma que no hay doble codificación de slug o manipulación en el proxy/CDN.
+### 7.2 Spikes in `bad_sig`
+- Ensure `SHORTENER_HMAC_KEY` is consistent across instances.
+- Confirm there is no double encoding of the slug or manipulation in the proxy/CDN.
 
-### 7.3 Muchos `not_found`/`expired`
-- Revisa ciclo de vida del enlace y *auto‑cleanup*.
-- Valida *time skew* entre nodos/containers.
+### 7.3 Many `not_found`/`expired`
+- Review link lifecycle and *auto‑cleanup*.
+- Validate *time skew* between nodes/containers.
 
-### 7.4 Backlog en colas (analytics)
-- Escala *workers*; revisa *upserts* lentos; detecta *hot keys*.
+### 7.4 Backlog in queues (analytics)
+- Scale *workers*; review slow *upserts*; detect *hot keys*.
 
 ---
 
@@ -252,7 +252,7 @@ Si necesitas *end‑to‑end tracing*:
 
 ### 8.1 Local
 ```bash
-# Métricas
+# Metrics
 curl -s http://localhost:8080/metrics | head -n 30
 
 # Health
@@ -260,27 +260,27 @@ curl -s http://localhost:8080/health | jq .
 ```
 
 ### 8.2 CI
-- PHPUnit valida cabeceras, *redirect semantics* (HEAD no consume clic), *rate‑limits* y métricas básicas.
-- El pipeline prepara `.env.testing` y rutas temporales para evitar errores de *view cache*.
+- PHPUnit validates headers, *redirect semantics* (HEAD does not consume a click), *rate‑limits* and basic metrics.
+- The pipeline prepares `.env.testing` and temporary paths to avoid *view cache* errors.
 
 ---
 
-## 9) Seguridad de `/metrics`
-- Si lo publicas, restringe por red (IP allowlist) o **Basic Auth** en el *reverse proxy*.
-- Nunca metas identificadores de usuario en *labels*.
-- Mantén acotada la cardinalidad de *labels* y buckets.
+## 9) Security of `/metrics`
+- If you expose it, restrict by network (IP allowlist) or **Basic Auth** in the reverse proxy.
+- Never put user identifiers into *labels*.
+- Keep label and bucket cardinality under control.
 
 ---
 
-## 10) Cambio controlado de métricas
+## 10) Controlled changes to metrics
 
-Al añadir una métrica nueva:
-1. Define **nombre, unidad, labels** y expectativa de cardinalidad.
-2. Añádela en `Metrics`, documenta aquí.
-3. Actualiza paneles/alertas relacionados.
-4. Despliega y verifica (canary si aplica).
+When adding a new metric:
+1. Define **name, unit, labels** and expected cardinality.
+2. Add it to `Metrics`, and document it here.
+3. Update related dashboards/alerts.
+4. Deploy and verify (canary if applicable).
 
 ---
 
-**Notas de portafolio**  
-Este repositorio está preparado para funcionar **en local** y exhibir *pruebas, métricas y salud* sin necesidad de un despliegue público. Si más adelante decides exponerlo, las secciones opcionales (Prometheus/Grafana/Alertmanager) te sirven de guía rápida.
+**Portfolio notes**  
+This repository is prepared to work **locally** and to expose *tests, metrics and health* without needing a public deployment. If you later decide to expose it, the optional sections (Prometheus/Grafana/Alertmanager) serve as a quick guide.
