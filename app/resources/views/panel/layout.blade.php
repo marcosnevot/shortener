@@ -20,9 +20,6 @@
           </span>
           <span class="brand-text">Shortener <span class="muted">Panel</span></span>
         </a>
-        <nav class="topnav" aria-label="Principal">
-          <span class="muted">Tema: Oscuro</span>
-        </nav>
       </div>
     </div>
   </header>
