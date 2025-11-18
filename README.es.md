@@ -2,6 +2,8 @@
 
 # Shortener — URL shortener con firmas HMAC y analítica *privacy‑first*
 
+![CI](https://github.com/marcosnevot/shortener/actions/workflows/ci.yml/badge.svg)
+
 > Laravel 12 + MySQL 8 + Redis 7. Slugs firmados (HMAC), panel mínimo, métricas Prometheus, *rate limits* y estadísticas con *k‑anonymity*.
 >
 > **Modo portfolio**: no incluye despliegue en producción. Se ejecuta en local con Docker y se valida con CI (tests).
